@@ -6,6 +6,8 @@ from database.crud import (
     create_chat,
     create_message,
     get_chat,
+    get_all_chats,
+    get_messages,
 )
 from database.database import get_db
 from services.ai_service import ask_ai
@@ -66,3 +68,34 @@ def chat(
     return {
         "reply": reply
     }
+
+@router.get("/chats")
+def list_chats(db: Session = Depends(get_db)):
+    chats = get_all_chats(db)
+
+    return [
+        {
+            "id": chat.id,
+            "title": chat.title,
+            "created_at": chat.created_at,
+        }
+        for chat in chats
+    ]
+
+
+@router.get("/chat/{chat_id}/messages")
+def chat_messages(
+    chat_id: int,
+    db: Session = Depends(get_db)
+):
+    messages = get_messages(db, chat_id)
+
+    return [
+        {
+            "id": message.id,
+            "sender": message.sender,
+            "message": message.message,
+            "created_at": message.created_at,
+        }
+        for message in messages
+    ]

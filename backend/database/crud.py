@@ -36,10 +36,18 @@ def create_message(
     return msg
 
 
+def get_all_chats(db: Session):
+    return (
+        db.query(Chat)
+        .order_by(Chat.created_at.desc())
+        .all()
+    )
+
+
 def get_messages(db: Session, chat_id: int):
     return (
         db.query(Message)
         .filter(Message.chat_id == chat_id)
-        .order_by(Message.id)
+        .order_by(Message.created_at.asc())
         .all()
     )
