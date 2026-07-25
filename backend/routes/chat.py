@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from database.crud import create_chat
+from database.crud import (
+    create_chat,
+    create_message,
+    get_chat,
+)
 from database.database import get_db
 from services.ai_service import ask_ai
 
@@ -32,7 +36,32 @@ def chat(
     request: ChatRequest,
     db: Session = Depends(get_db)
 ):
+    chat = get_chat(db, request.chat_id)
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found"
+        )
+
+    # Save user message
+    create_message(
+        db=db,
+        chat_id=request.chat_id,
+        sender="user",
+        message=request.message
+    )
+
+    # Ask Gemini
     reply = ask_ai(request.message)
+
+    # Save AI response
+    create_message(
+        db=db,
+        chat_id=request.chat_id,
+        sender="ai",
+        message=reply
+    )
 
     return {
         "reply": reply

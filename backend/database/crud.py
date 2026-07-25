@@ -13,6 +13,10 @@ def create_chat(db: Session, title: str):
     return chat
 
 
+def get_chat(db: Session, chat_id: int):
+    return db.query(Chat).filter(Chat.id == chat_id).first()
+
+
 def create_message(
     db: Session,
     chat_id: int,
@@ -31,8 +35,6 @@ def create_message(
 
     return msg
 
-def get_chat(db: Session, chat_id: int):
-    return db.query(Chat).filter(Chat.id == chat_id).first()
 
 def get_messages(db: Session, chat_id: int):
     return (
