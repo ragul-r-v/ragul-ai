@@ -1,25 +1,42 @@
-import api from "./api";
+import axios from "axios";
 
-export async function createChat() {
-  const response = await api.post("/chat/new");
-  return response.data;
-}
+const API = "http://localhost:8000";
 
-export async function sendMessage(chatId: number, message: string) {
-  const response = await api.post("/chat", {
+export const createChat = async () => {
+  const res = await axios.post(`${API}/chat/new`);
+  return res.data;
+};
+
+export const sendMessage = async (chatId: number, message: string) => {
+  const res = await axios.post(`${API}/chat`, {
     chat_id: chatId,
     message,
   });
 
-  return response.data.reply;
-}
+  return res.data;
+};
 
-export async function getChats() {
-  const response = await api.get("/chats");
-  return response.data;
-}
+export const getChats = async () => {
+  const res = await axios.get(`${API}/chats`);
+  return res.data;
+};
 
-export async function getMessages(chatId: number) {
-  const response = await api.get(`/chat/${chatId}/messages`);
-  return response.data;
-}
+export const getMessages = async (chatId: number) => {
+  const res = await axios.get(`${API}/chat/${chatId}/messages`);
+
+  return res.data;
+};
+
+export const renameChat = async (chatId: number, title: string) => {
+  const res = await axios.put(`${API}/chat/${chatId}`, {
+    title,
+  });
+
+  return res.data;
+};
+
+export const deleteChat = async (chatId: number) => {
+  const res = await axios.delete(`${API}/chat/${chatId}`);
+
+  return res.data;
+};

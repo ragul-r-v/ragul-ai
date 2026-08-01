@@ -11,73 +11,27 @@ from database.crud import (
     update_chat_title,
     delete_chat,
 )
-
-
-
-from database.crud import (
-    create_chat,
-    create_message,
-    get_chat,
-    get_all_chats,
-    get_messages,
-)
 from database.database import get_db
 from services.ai_service import ask_ai
 
 router = APIRouter()
 
 
+# -----------------------------
+# Request Models
+# -----------------------------
 class ChatRequest(BaseModel):
     chat_id: int
     message: str
 
+
 class RenameChatRequest(BaseModel):
     title: str
 
-@router.put("/chat/{chat_id}")
-def rename_chat(
-    chat_id: int,
-    request: RenameChatRequest,
-    db: Session = Depends(get_db),
-):
-    chat = update_chat_title(
-        db,
-        chat_id,
-        request.title,
-    )
 
-    if not chat:
-        raise HTTPException(
-            status_code=404,
-            detail="Chat not found",
-        )
-
-    return {
-        "success": True
-    }
-
-
-@router.delete("/chat/{chat_id}")
-def remove_chat(
-    chat_id: int,
-    db: Session = Depends(get_db),
-):
-    deleted = delete_chat(db, chat_id)
-
-    if not deleted:
-        raise HTTPException(
-            status_code=404,
-            detail="Chat not found",
-        )
-
-    return {
-        "success": True
-    }
-
-
-
-
-
+# -----------------------------
+# Create New Chat
+# -----------------------------
 @router.post("/chat/new")
 def new_chat(db: Session = Depends(get_db)):
     chat = create_chat(
@@ -91,6 +45,9 @@ def new_chat(db: Session = Depends(get_db)):
     }
 
 
+# -----------------------------
+# Send Message
+# -----------------------------
 @router.post("/chat")
 def chat(
     request: ChatRequest,
@@ -112,21 +69,29 @@ def chat(
         message=request.message
     )
 
+    # Auto rename only for first message
     if chat.title == "New Chat":
-    title = request.message.strip()
+        title = request.message.strip()
 
-    if len(title) > 40:
-        title = title[:40] + "..."
+        if len(title) > 40:
+            title = title[:40] + "..."
 
-    update_chat_title(
+        update_chat_title(
+            db=db,
+            chat_id=chat.id,
+            title=title,
+        )
+
+        # Refresh chat object
+        chat = get_chat(db, chat.id)
+
+    # Ask AI
+    history = get_messages(
         db=db,
-        chat_id=chat.id,
-        title=title,
+        chat_id=request.chat_id,
     )
 
-
-    # Ask Gemini
-    reply = ask_ai(request.message)
+    reply = ask_ai(history)
 
     # Save AI response
     create_message(
@@ -137,9 +102,15 @@ def chat(
     )
 
     return {
-        "reply": reply
+        "reply": reply,
+        "chat_id": chat.id,
+        "title": chat.title,
     }
 
+
+# -----------------------------
+# Get All Chats
+# -----------------------------
 @router.get("/chats")
 def list_chats(db: Session = Depends(get_db)):
     chats = get_all_chats(db)
@@ -154,11 +125,22 @@ def list_chats(db: Session = Depends(get_db)):
     ]
 
 
+# -----------------------------
+# Get Messages
+# -----------------------------
 @router.get("/chat/{chat_id}/messages")
 def chat_messages(
     chat_id: int,
     db: Session = Depends(get_db)
 ):
+    chat = get_chat(db, chat_id)
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found"
+        )
+
     messages = get_messages(db, chat_id)
 
     return [
@@ -170,3 +152,58 @@ def chat_messages(
         }
         for message in messages
     ]
+
+
+# -----------------------------
+# Rename Chat
+# -----------------------------
+@router.put("/chat/{chat_id}")
+def rename_chat(
+    chat_id: int,
+    request: RenameChatRequest,
+    db: Session = Depends(get_db),
+):
+    chat = update_chat_title(
+        db=db,
+        chat_id=chat_id,
+        title=request.title,
+    )
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found",
+        )
+
+    return {
+        "success": True,
+        "chat": {
+            "id": chat.id,
+            "title": chat.title,
+        },
+    }
+
+
+# -----------------------------
+# Delete Chat
+# -----------------------------
+@router.delete("/chat/{chat_id}")
+def remove_chat(
+    chat_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = delete_chat(
+        db=db,
+        chat_id=chat_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found",
+        )
+
+    return {
+        "success": True,
+        "deleted_chat_id": chat_id,
+    }

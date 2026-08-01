@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Message } from "../../types/message";
-import MessageBubble from "./MessageBubble";
+import MessageComponent from "./Message";
 import TypingIndicator from "./TypingIndicator";
 
 interface Props {
@@ -25,15 +25,17 @@ export default function ChatWindow({ messages, isLoading }: Props) {
         </div>
       )}
 
-      {messages.map((message) => (
-        <MessageBubble
-          key={message.id}
-          sender={message.sender}
-          text={message.text}
-        />
-      ))}
+      <div className="space-y-4">
+        {messages.map((message) => (
+          <MessageComponent
+            key={message.id}
+            sender={message.sender}
+            message={message.message}
+          />
+        ))}
 
-      {isLoading && <TypingIndicator />}
+        {isLoading && <TypingIndicator />}
+      </div>
 
       <div ref={bottomRef} />
     </div>
