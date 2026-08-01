@@ -8,6 +8,18 @@ from database.crud import (
     get_chat,
     get_all_chats,
     get_messages,
+    update_chat_title,
+    delete_chat,
+)
+
+
+
+from database.crud import (
+    create_chat,
+    create_message,
+    get_chat,
+    get_all_chats,
+    get_messages,
 )
 from database.database import get_db
 from services.ai_service import ask_ai
@@ -18,6 +30,52 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     chat_id: int
     message: str
+
+class RenameChatRequest(BaseModel):
+    title: str
+
+@router.put("/chat/{chat_id}")
+def rename_chat(
+    chat_id: int,
+    request: RenameChatRequest,
+    db: Session = Depends(get_db),
+):
+    chat = update_chat_title(
+        db,
+        chat_id,
+        request.title,
+    )
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found",
+        )
+
+    return {
+        "success": True
+    }
+
+
+@router.delete("/chat/{chat_id}")
+def remove_chat(
+    chat_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = delete_chat(db, chat_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found",
+        )
+
+    return {
+        "success": True
+    }
+
+
+
 
 
 @router.post("/chat/new")
@@ -53,6 +111,19 @@ def chat(
         sender="user",
         message=request.message
     )
+
+    if chat.title == "New Chat":
+    title = request.message.strip()
+
+    if len(title) > 40:
+        title = title[:40] + "..."
+
+    update_chat_title(
+        db=db,
+        chat_id=chat.id,
+        title=title,
+    )
+
 
     # Ask Gemini
     reply = ask_ai(request.message)

@@ -38,7 +38,7 @@ export default function useChat() {
       setChats(data);
 
       if (data.length > 0 && activeChatId === null) {
-        setActiveChatId(data[0].id);
+        await selectChat(data[0].id);
       }
     } catch (err) {
       console.error("Failed to load chats:", err);
@@ -49,7 +49,14 @@ export default function useChat() {
   // Refresh chat list
   // -------------------------
   const refreshChats = async () => {
-    await loadChats();
+    try {
+      const data = await getChats();
+      setChats(data);
+      return data;
+    } catch (err) {
+      console.error("Failed to refresh chats:", err);
+      return [];
+    }
   };
 
   // -------------------------
@@ -88,9 +95,7 @@ export default function useChat() {
 
       await refreshChats();
 
-      setActiveChatId(chat.chat_id);
-
-      setMessages([]);
+      await selectChat(chat.chat_id);
     } catch (err) {
       console.error("Failed to create chat:", err);
     }
@@ -102,6 +107,7 @@ export default function useChat() {
   const send = async (text: string) => {
     if (!activeChatId) return;
 
+    // Optimistically show the user's message
     const userMessage: Message = {
       id: crypto.randomUUID(),
       sender: "user",
@@ -109,19 +115,17 @@ export default function useChat() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-
     setIsLoading(true);
 
     try {
-      const reply = await sendMessage(activeChatId, text);
+      // Send to backend
+      await sendMessage(activeChatId, text);
 
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        sender: "ai",
-        text: reply,
-      };
+      // Reload the full conversation from the database
+      await loadMessages(activeChatId);
 
-      setMessages((prev) => [...prev, aiMessage]);
+      // Refresh chat list (useful later when titles change)
+      await refreshChats();
     } catch (err) {
       console.error("Failed to send message:", err);
     } finally {

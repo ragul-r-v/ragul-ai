@@ -1,18 +1,27 @@
 import { Paperclip, Mic, SendHorizontal } from "lucide-react";
 import { useState } from "react";
 
-type ChatInputProps = {
-  onSend: (message: string) => void;
-};
+interface ChatInputProps {
+  onSend: (message: string) => Promise<void>;
+}
 
-function ChatInput({ onSend }: ChatInputProps) {
+export default function ChatInput({ onSend }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
 
-    onSend(message);
+    const text = message.trim();
+
     setMessage("");
+    setSending(true);
+
+    try {
+      await onSend(text);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -27,6 +36,7 @@ function ChatInput({ onSend }: ChatInputProps) {
           placeholder="Ask Ragul AI anything..."
           className="flex-1 bg-transparent outline-none text-white placeholder:text-slate-500"
           value={message}
+          disabled={sending}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -41,7 +51,8 @@ function ChatInput({ onSend }: ChatInputProps) {
 
         <button
           onClick={handleSend}
-          className="rounded-xl bg-cyan-500 p-3 text-slate-900 hover:bg-cyan-400 transition"
+          disabled={sending}
+          className="rounded-xl bg-cyan-500 p-3 text-slate-900 hover:bg-cyan-400 transition disabled:opacity-50"
         >
           <SendHorizontal size={20} />
         </button>
@@ -49,5 +60,3 @@ function ChatInput({ onSend }: ChatInputProps) {
     </div>
   );
 }
-
-export default ChatInput;
