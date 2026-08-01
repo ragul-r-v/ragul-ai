@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
-import type { Message } from "../types/message";
 import type { Chat } from "../types/chat";
+import type { Message } from "../types/message";
 
-export type ChatContextType = {
+interface ChatContextType {
   chats: Chat[];
   setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
 
@@ -14,15 +14,15 @@ export type ChatContextType = {
 
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-};
+}
 
 export const ChatContext = createContext<ChatContextType | null>(null);
 
-export function useChat() {
+export function useChatContext() {
   const context = useContext(ChatContext);
 
   if (!context) {
-    throw new Error("useChat must be used inside ChatContext");
+    throw new Error("useChatContext must be used inside ChatProvider");
   }
 
   return context;
