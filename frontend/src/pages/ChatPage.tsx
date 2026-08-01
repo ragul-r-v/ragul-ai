@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createChat, sendMessage } from "../services/chatService";
 
 import ChatWindow from "../components/chat/ChatWindow";
@@ -7,6 +7,8 @@ import ChatInput from "../components/chat/ChatInput";
 import type { Message } from "../types/message";
 
 function ChatPage() {
+  const [chatId, setChatId] = useState<number | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -17,7 +19,22 @@ function ChatPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendMessage = async (text: string) => {
+  useEffect(() => {
+    async function initializeChat() {
+      try {
+        const chat = await createChat();
+        setChatId(chat.chat_id);
+      } catch (error) {
+        console.error("Failed to create chat:", error);
+      }
+    }
+
+    initializeChat();
+  }, []);
+
+  const handleSend = async (text: string) => {
+    if (!chatId) return;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: "user",
@@ -28,9 +45,9 @@ function ChatPage() {
     setIsLoading(true);
 
     try {
-      const reply = await sendChatMessage(text);
+      const reply = await sendMessage(chatId, text);
 
-      const aiMessage = {
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
         text: reply,
@@ -48,7 +65,7 @@ function ChatPage() {
     <div className="flex h-full flex-col">
       <ChatWindow messages={messages} isLoading={isLoading} />
 
-      <ChatInput onSend={sendMessage} />
+      <ChatInput onSend={handleSend} />
     </div>
   );
 }
