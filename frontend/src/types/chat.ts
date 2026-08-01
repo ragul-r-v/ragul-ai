@@ -1,7 +1,5 @@
-import type { Message } from "../pages/ChatPage";
-
 export type Chat = {
-  id: string;
+  id: number;
   title: string;
-  messages: Message[];
+  created_at: string;
 };
