@@ -30,7 +30,7 @@ export default function ChatWindow({ messages, isLoading }: Props) {
           <MessageComponent
             key={message.id}
             sender={message.sender}
-            message={message.message}
+            message={message.text}
           />
         ))}
 

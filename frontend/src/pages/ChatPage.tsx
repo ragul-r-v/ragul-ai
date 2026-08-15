@@ -1,7 +1,6 @@
 import ChatWindow from "../components/chat/ChatWindow";
 import ChatInput from "../components/chat/ChatInput";
-import useChat from "../hooks/useChat";
-
+import { useChat } from "../hooks/useChat";
 function ChatPage() {
   const { messages, isLoading, send, activeChatId } = useChat();
 

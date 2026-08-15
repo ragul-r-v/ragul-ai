@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-import { Chat } from "../../types/chat";
+import type { Chat } from "../../types/chat";
 import { useChat } from "../../hooks/useChat";
 
 interface Props {

@@ -1,5 +1,5 @@
 import ChatItem from "./ChatItem";
-import { Chat } from "../../types/chat";
+import type { Chat } from "../../types/chat";
 
 interface Props {
   chats: Chat[];
