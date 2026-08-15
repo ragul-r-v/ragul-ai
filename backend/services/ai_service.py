@@ -28,19 +28,31 @@ def build_prompt(messages):
         else:
             conversation += f"Assistant: {msg.message}\n"
 
-    return f"""
+    prompt = f"""
 {system_prompt}
 
-Knowledge:
-
+PERSONAL KNOWLEDGE ABOUT RAGUL:
 {about_me}
 
-Conversation:
-
+CONVERSATION HISTORY:
 {conversation}
 
-Assistant:
+IMPORTANT INSTRUCTIONS:
+- Answer general technical and knowledge questions using your general knowledge.
+- Use the personal knowledge above when the user asks about Ragul.
+- Do not restrict your answers only to the personal knowledge.
+- Do not say "I don't have that information yet" merely because something is absent from the personal knowledge.
+- Use conversation history when it is relevant.
+- Give clear and useful answers.
+- For programming questions, provide explanations and examples.
+
+LATEST USER QUESTION:
+{conversation.split("User:")[-1]}
+
+ASSISTANT:
 """
+
+    return prompt
 
 
 def ask_ai(messages):
