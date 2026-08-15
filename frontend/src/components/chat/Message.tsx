@@ -1,8 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import CodeBlock from "./CodeBlock";
 
 interface Props {
   sender: "user" | "ai";
@@ -36,19 +35,10 @@ export default function Message({
 
                   if (match) {
                     return (
-                      <SyntaxHighlighter
+                      <CodeBlock
+                        code={String(children).replace(/\n$/, "")}
                         language={match[1]}
-                        style={oneDark}
-                        PreTag="div"
-                        customStyle={{
-                          margin: "1rem 0",
-                          borderRadius: "0.75rem",
-                          padding: "1rem",
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        {String(children).replace(/\n$/, "")}
-                      </SyntaxHighlighter>
+                      />
                     );
                   }
 
