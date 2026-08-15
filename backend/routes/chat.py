@@ -1,3 +1,5 @@
+from services.ai_service import ask_ai, stream_ai
+from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -207,3 +209,64 @@ def remove_chat(
         "success": True,
         "deleted_chat_id": chat_id,
     }
+
+
+@router.post("/chat/stream")
+def stream_chat(
+    request: ChatRequest,
+    db: Session = Depends(get_db)
+):
+    chat = get_chat(db, request.chat_id)
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found"
+        )
+
+    # Save user message
+    create_message(
+        db=db,
+        chat_id=request.chat_id,
+        sender="user",
+        message=request.message
+    )
+
+    # Auto-title first message
+    if chat.title == "New Chat":
+        title = request.message.strip()
+
+        if len(title) > 40:
+            title = title[:40] + "..."
+
+        update_chat_title(
+            db=db,
+            chat_id=chat.id,
+            title=title
+        )
+
+    # Get complete conversation history
+    history = get_messages(
+        db=db,
+        chat_id=request.chat_id
+    )
+
+    def generate():
+        full_response = ""
+
+        for chunk in stream_ai(history):
+            full_response += chunk
+            yield chunk
+
+        # Save complete AI response after streaming finishes
+        create_message(
+            db=db,
+            chat_id=request.chat_id,
+            sender="ai",
+            message=full_response
+        )
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/plain"
+    )
