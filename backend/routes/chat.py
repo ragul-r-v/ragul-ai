@@ -270,3 +270,79 @@ def stream_chat(
         generate(),
         media_type="text/plain"
     )
+
+@router.post("/chat/{chat_id}/regenerate")
+def regenerate_chat(
+    chat_id: int,
+    db: Session = Depends(get_db),
+):
+    chat = get_chat(db, chat_id)
+
+    if not chat:
+        raise HTTPException(
+            status_code=404,
+            detail="Chat not found",
+        )
+
+    history = get_messages(
+        db=db,
+        chat_id=chat_id,
+    )
+
+    if not history:
+        raise HTTPException(
+            status_code=400,
+            detail="No messages available to regenerate",
+        )
+
+    # The last message should normally be the AI response.
+    last_message = history[-1]
+
+    if last_message.sender != "ai":
+        raise HTTPException(
+            status_code=400,
+            detail="No AI response available to regenerate",
+        )
+
+    # Find the user message immediately before the AI response.
+    user_message = None
+
+    for message in reversed(history[:-1]):
+        if message.sender == "user":
+            user_message = message
+            break
+
+    if not user_message:
+        raise HTTPException(
+            status_code=400,
+            detail="No user message found",
+        )
+
+    # Remove the previous AI response.
+    db.delete(last_message)
+    db.commit()
+
+    # Reload history without the previous AI response.
+    history = get_messages(
+        db=db,
+        chat_id=chat_id,
+    )
+
+    def generate():
+        full_response = ""
+
+        for chunk in stream_ai(history):
+            full_response += chunk
+            yield chunk
+
+        create_message(
+            db=db,
+            chat_id=chat_id,
+            sender="ai",
+            message=full_response,
+        )
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/plain",
+    )

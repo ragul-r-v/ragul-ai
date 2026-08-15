@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface CodeBlockProps {
@@ -28,7 +29,6 @@ export default function CodeBlock({ code, language }: CodeBlockProps) {
 
   return (
     <div className="my-4 overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-4 py-2">
         <span className="text-xs font-medium text-slate-400">
           {language || "code"}
@@ -53,7 +53,6 @@ export default function CodeBlock({ code, language }: CodeBlockProps) {
         </button>
       </div>
 
-      {/* Code */}
       <SyntaxHighlighter
         language={language || "text"}
         style={oneDark}

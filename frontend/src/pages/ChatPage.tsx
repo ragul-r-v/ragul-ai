@@ -1,20 +1,36 @@
 import ChatWindow from "../components/chat/ChatWindow";
 import ChatInput from "../components/chat/ChatInput";
 import { useChat } from "../hooks/useChat";
+
 function ChatPage() {
-  const { messages, isLoading, send, activeChatId } = useChat();
+  const {
+    messages,
+    isLoading,
+    send,
+    activeChatId,
+    regenerate,
+    stopGenerating,
+  } = useChat();
 
   return (
     <div className="flex h-full flex-col">
       {!activeChatId ? (
-        <div className="flex flex-1 items-center justify-center text-gray-500">
+        <div className="flex flex-1 items-center justify-center text-slate-500">
           Select a chat or create a new one.
         </div>
       ) : (
         <>
-          <ChatWindow messages={messages} isLoading={isLoading} />
+          <ChatWindow
+            messages={messages}
+            isLoading={isLoading}
+            onRegenerate={regenerate}
+          />
 
-          <ChatInput onSend={send} />
+          <ChatInput
+            onSend={send}
+            isLoading={isLoading}
+            onStop={stopGenerating}
+          />
         </>
       )}
     </div>

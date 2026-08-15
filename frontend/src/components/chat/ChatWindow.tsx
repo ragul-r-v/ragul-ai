@@ -1,14 +1,21 @@
 import { useEffect, useRef } from "react";
+
 import type { Message } from "../../types/message";
+
 import MessageComponent from "./Message";
 import TypingIndicator from "./TypingIndicator";
 
 interface Props {
   messages: Message[];
   isLoading: boolean;
+  onRegenerate: () => void;
 }
 
-export default function ChatWindow({ messages, isLoading }: Props) {
+export default function ChatWindow({
+  messages,
+  isLoading,
+  onRegenerate,
+}: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,10 +29,12 @@ export default function ChatWindow({ messages, isLoading }: Props) {
       {messages.length === 0 ? (
         <div className="flex h-full items-center justify-center text-slate-500">
           <div className="text-center">
-            <div className="text-4xl mb-3">🤖</div>
+            <div className="mb-3 text-4xl">🤖</div>
+
             <h2 className="text-xl font-semibold text-slate-300">
               Welcome to Ragul AI
             </h2>
+
             <p className="mt-2 text-sm">Ask me anything.</p>
           </div>
         </div>
@@ -40,6 +49,11 @@ export default function ChatWindow({ messages, isLoading }: Props) {
                 isLoading &&
                 message.sender === "ai" &&
                 index === messages.length - 1
+              }
+              onRegenerate={
+                message.sender === "ai" && index === messages.length - 1
+                  ? onRegenerate
+                  : undefined
               }
             />
           ))}

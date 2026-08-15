@@ -1,42 +1,188 @@
-import axios from "axios";
+import api from "./api";
 
-const API = "http://localhost:8000";
+// ==========================================
+// CREATE CHAT
+// ==========================================
 
-export const createChat = async () => {
-  const res = await axios.post(`${API}/chat/new`);
-  return res.data;
-};
+export async function createChat() {
+  const response = await api.post("/chat/new");
 
-export const sendMessage = async (chatId: number, message: string) => {
-  const res = await axios.post(`${API}/chat`, {
+  return response.data;
+}
+
+// ==========================================
+// NORMAL CHAT
+// ==========================================
+
+export async function sendMessage(chatId: number, message: string) {
+  const response = await api.post("/chat", {
     chat_id: chatId,
     message,
   });
 
-  return res.data;
-};
+  return response.data.reply;
+}
 
-export const getChats = async () => {
-  const res = await axios.get(`${API}/chats`);
-  return res.data;
-};
+// ==========================================
+// GET CHATS
+// ==========================================
 
-export const getMessages = async (chatId: number) => {
-  const res = await axios.get(`${API}/chat/${chatId}/messages`);
+export async function getChats() {
+  const response = await api.get("/chats");
 
-  return res.data;
-};
+  return response.data;
+}
 
-export const renameChat = async (chatId: number, title: string) => {
-  const res = await axios.put(`${API}/chat/${chatId}`, {
+// ==========================================
+// GET MESSAGES
+// ==========================================
+
+export async function getMessages(chatId: number) {
+  const response = await api.get(`/chat/${chatId}/messages`);
+
+  return response.data;
+}
+
+// ==========================================
+// RENAME CHAT
+// ==========================================
+
+export async function renameChat(chatId: number, title: string) {
+  const response = await api.put(`/chat/${chatId}`, {
     title,
   });
 
-  return res.data;
-};
+  return response.data;
+}
 
-export const deleteChat = async (chatId: number) => {
-  const res = await axios.delete(`${API}/chat/${chatId}`);
+// ==========================================
+// DELETE CHAT
+// ==========================================
 
-  return res.data;
-};
+export async function deleteChat(chatId: number) {
+  const response = await api.delete(`/chat/${chatId}`);
+
+  return response.data;
+}
+
+// ==========================================
+// STREAM CHAT
+// ==========================================
+
+export async function streamChat(
+  chatId: number,
+  message: string,
+  onChunk: (chunk: string) => void,
+  signal?: AbortSignal,
+) {
+  const response = await fetch("http://127.0.0.1:8000/chat/stream", {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify({
+      chat_id: chatId,
+      message,
+    }),
+
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Streaming request failed: ${response.status}`);
+  }
+
+  if (!response.body) {
+    throw new Error("Streaming response body is empty");
+  }
+
+  const reader = response.body.getReader();
+
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      const chunk = decoder.decode(value, {
+        stream: true,
+      });
+
+      if (chunk) {
+        onChunk(chunk);
+      }
+    }
+
+    const remaining = decoder.decode();
+
+    if (remaining) {
+      onChunk(remaining);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// ==========================================
+// REGENERATE CHAT
+// ==========================================
+
+export async function regenerateChat(
+  chatId: number,
+  onChunk: (chunk: string) => void,
+) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/chat/${chatId}/regenerate`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Regeneration failed: ${response.status}`);
+  }
+
+  if (!response.body) {
+    throw new Error("Regeneration response is empty");
+  }
+
+  const reader = response.body.getReader();
+
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      const chunk = decoder.decode(value, {
+        stream: true,
+      });
+
+      if (chunk) {
+        onChunk(chunk);
+      }
+    }
+
+    const remaining = decoder.decode();
+
+    if (remaining) {
+      onChunk(remaining);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
