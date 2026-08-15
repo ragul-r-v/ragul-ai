@@ -19,7 +19,7 @@ system_prompt = read_file("prompts/system_prompt.txt")
 about_me = read_file("knowledge/about_me.md")
 
 
-def ask_ai(messages):
+def build_prompt(messages):
     conversation = ""
 
     for msg in messages:
@@ -28,7 +28,7 @@ def ask_ai(messages):
         else:
             conversation += f"Assistant: {msg.message}\n"
 
-    prompt = f"""
+    return f"""
 {system_prompt}
 
 Knowledge:
@@ -42,6 +42,10 @@ Conversation:
 Assistant:
 """
 
+
+def ask_ai(messages):
+    prompt = build_prompt(messages)
+
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -54,6 +58,28 @@ Assistant:
         print("Gemini Error:", e)
 
         return (
+            "⚠️ Sorry, I'm temporarily unavailable. "
+            "Please try again in a few moments."
+        )
+
+
+def stream_ai(messages):
+    prompt = build_prompt(messages)
+
+    try:
+        response = client.models.generate_content_stream(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+
+    except Exception as e:
+        print("Gemini Streaming Error:", e)
+
+        yield (
             "⚠️ Sorry, I'm temporarily unavailable. "
             "Please try again in a few moments."
         )
